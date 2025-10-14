@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Upload, Loader2, FileText, CheckCircle2, Wrench, Mail } from "lucide-react";
@@ -69,7 +68,7 @@ export default function Portal() {
       }
 
       const data = await response.json();
-      
+
       if (data.resumeUrl) {
         setResumeUrl(data.resumeUrl);
         setWorkflowSteps(steps => 
@@ -110,7 +109,6 @@ export default function Portal() {
         formData.append('files', files[i]);
       }
 
-      // Create preview URL for the uploaded file
       const fileUrl = URL.createObjectURL(files[0]);
       setUploadedFileUrl(fileUrl);
 
@@ -121,7 +119,7 @@ export default function Portal() {
 
       const data = await response.json();
       const responseData = Array.isArray(data) ? data[0] : data;
-      
+
       if (responseData.summary && responseData.products && responseData.resumeUrl) {
         setWorkflowResponse(responseData);
         setResumeUrl(responseData.resumeUrl);
@@ -223,7 +221,7 @@ export default function Portal() {
     );
   };
 
-  const handleEmailSubmit = async () => {
+  const handleResolutionContinue = async () => {
     if (!email) {
       toast({
         title: "Email required",
@@ -248,6 +246,10 @@ export default function Portal() {
         })
       });
 
+      if (!response.ok) {
+        throw new Error('Failed to submit resolution details');
+      }
+
       setWorkflowSteps(steps => 
         steps.map((step) => ({
           ...step,
@@ -262,7 +264,7 @@ export default function Portal() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to submit. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to submit. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -272,67 +274,65 @@ export default function Portal() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header spanning full width */}
       <div className="bg-white border-b border-gray-200 py-8 px-12">
         <h1 className="text-4xl font-bold text-gray-900 text-center">Customer Claims Portal</h1>
         <p className="text-gray-600 text-center mt-2">Get support for your products quickly and easily</p>
       </div>
 
-      {/* Main content area with two rounded sections */}
       <div className="flex gap-6 p-6 max-w-7xl mx-auto">
         {/* Left Panel - Claim Status */}
-        <div className="w-80 bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
+        <div className="w-80 bg-black rounded-xl p-6 flex flex-col text-white">
           <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-2">Claim Status</h2>
-            <p className="text-gray-600 text-sm">Track your progress</p>
+            <h2 className="text-xl font-semibold mb-2 text-center">Claim Status</h2>
+            <p className="text-gray-300 text-sm text-center">Track your progress</p>
           </div>
-          
+
           <div className="space-y-3 flex-1">
             {workflowSteps.map((step, index) => (
               <div key={step.id} className={`p-4 rounded-lg border ${
-                step.status === "completed" ? "bg-green-50 border-green-200" :
-                step.status === "active" ? "bg-blue-50 border-blue-200" :
-                "bg-gray-50 border-gray-200"
+                step.status === "completed" ? "bg-green-900 border-green-700" :
+                step.status === "active" ? "bg-blue-700 border-blue-500" :
+                "bg-gray-800 border-gray-700"
               }`}>
                 <div className="flex items-start gap-3">
                   <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
                     step.status === "completed" ? "bg-green-500 text-white" :
-                    step.status === "active" ? "bg-blue-500 text-white" :
-                    "bg-gray-300 text-gray-600"
+                    step.status === "active" ? "bg-white text-blue-500" :
+                    "bg-gray-600 text-gray-300"
                   }`}>
                     {step.status === "completed" ? (
                       <CheckCircle2 className="w-4 h-4" />
                     ) : (
-                      <span className="text-xs">{index + 1}</span>
+                      <span className="text-xs font-bold">{index + 1}</span>
                     )}
                   </div>
                   <div className="flex-1">
                     <p className={`text-sm font-medium ${
-                      step.status === "active" ? "text-gray-900" : "text-gray-700"
+                      step.status === "active" ? "text-white" : "text-gray-300"
                     }`}>
                       {step.label}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">{step.description}</p>
+                    <p className="text-xs text-gray-400 mt-1">{step.description}</p>
                   </div>
                 </div>
               </div>
             ))}
           </div>
 
-          {currentStep === "selection" && uploadedFileUrl && (
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <h3 className="text-sm font-semibold mb-3">Invoice Preview</h3>
-              <div className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
+          {(currentStep === "selection" || currentStep === "issues" || currentStep === "resolution") && workflowResponse && (
+            <div className="mt-8 pt-6 border-t border-gray-700">
+              <h3 className="text-sm font-semibold mb-3 text-center">Receipt Preview & Summary</h3>
+              <div className="bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
                 <img 
                   src={uploadedFileUrl} 
                   alt="Invoice preview" 
                   className="w-full h-auto"
                 />
               </div>
-              {workflowResponse?.summary && (
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <p className="text-xs font-semibold text-blue-900 mb-1">Summary</p>
-                  <p className="text-xs text-blue-800">{workflowResponse.summary}</p>
+              {workflowResponse.summary && (
+                <div className="mt-4 p-3 bg-blue-900 rounded-lg border border-blue-700">
+                  <p className="text-xs font-semibold text-blue-200 mb-1">Summary</p>
+                  <p className="text-xs text-blue-100">{workflowResponse.summary}</p>
                 </div>
               )}
             </div>
@@ -359,7 +359,7 @@ export default function Portal() {
                   </p>
                 </div>
               </div>
-              
+
               <Button
                 size="lg"
                 onClick={handleStartWorkflow}
@@ -585,7 +585,7 @@ export default function Portal() {
                 <p className="text-gray-700 mb-4">
                   Could you please provide your email address so we can send you a summary of your case?
                 </p>
-                
+
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">📧 Get Updates via Email</label>
@@ -594,11 +594,11 @@ export default function Portal() {
                       placeholder="Enter your email address"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full"
+                      className="w-full bg-white text-gray-900"
                     />
                   </div>
                   <Button
-                    onClick={handleEmailSubmit}
+                    onClick={handleResolutionContinue}
                     disabled={isSubmitting || !email}
                     className="w-full py-6 text-lg bg-blue-600 hover:bg-blue-700 text-white"
                   >
