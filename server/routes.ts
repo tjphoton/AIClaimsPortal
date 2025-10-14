@@ -9,6 +9,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // use storage to perform CRUD operations on the storage interface
   // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
 
+  // Initial n8n webhook trigger
+  app.post("/api/start-workflow", async (req, res) => {
+    try {
+      const webhookUrl = "https://n8n-dq6g.onrender.com/webhook-test/2f1d759a-da2d-422a-9c7b-acb647f5823d";
+
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(req.body)
+      });
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to start workflow" });
+    }
+  });
+
+  // Resume workflow with user data
+  app.post("/api/resume-workflow", async (req, res) => {
+    try {
+      const resumeUrl = req.query.resumeUrl as string;
+
+      if (!resumeUrl) {
+        return res.status(400).json({ error: "resumeUrl is required" });
+      }
+
+      const response = await fetch(resumeUrl, {
+        method: 'POST',
+        body: req,
+        duplex: 'half',
+        headers: {
+          'Content-Type': req.headers['content-type'] || 'application/json',
+          'Content-Length': req.headers['content-length'] || '0'
+        }
+      } as any);
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to resume workflow" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

@@ -34,20 +34,73 @@ export default function Portal() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    //todo: remove mock functionality
-    // Simulate adding a new claim to status
-    const newClaim: ClaimStatus = {
-      id: Date.now().toString(),
-      status: "processing",
-      timestamp: "Just now",
-      message: `Processing ${formData.claimType || 'new claim'}...`
-    };
+    try {
+      // If there are files, use FormData and resume endpoint
+      if (formData.files && formData.files.length > 0) {
+        const formDataToSend = new FormData();
+        formDataToSend.append('claimType', formData.claimType);
+        formDataToSend.append('description', formData.description);
+        
+        for (let i = 0; i < formData.files.length; i++) {
+          formDataToSend.append('files', formData.files[i]);
+        }
 
-    setClaims([newClaim, ...claims]);
+        // First, start the workflow to get resumeUrl
+        const startResponse = await fetch('/api/start-workflow', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            claimType: formData.claimType,
+            description: formData.description,
+            hasFiles: true
+          })
+        });
 
-    // Simulate API call to n8n webhook
-    setTimeout(() => {
-      setIsSubmitting(false);
+        const startData = await startResponse.json();
+        
+        if (startData.resumeUrl) {
+          // Send files to resumeUrl
+          const resumeResponse = await fetch(`/api/resume-workflow?resumeUrl=${encodeURIComponent(startData.resumeUrl)}`, {
+            method: 'POST',
+            body: formDataToSend
+          });
+          
+          const resumeData = await resumeResponse.json();
+          
+          const newClaim: ClaimStatus = {
+            id: Date.now().toString(),
+            status: "processing",
+            timestamp: "Just now",
+            message: resumeData.message || `Processing ${formData.claimType}...`
+          };
+          setClaims([newClaim, ...claims]);
+        }
+      } else {
+        // No files, just send JSON
+        const response = await fetch('/api/start-workflow', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            claimType: formData.claimType,
+            description: formData.description
+          })
+        });
+
+        const data = await response.json();
+        
+        const newClaim: ClaimStatus = {
+          id: Date.now().toString(),
+          status: "processing",
+          timestamp: "Just now",
+          message: data.message || `Processing ${formData.claimType}...`
+        };
+        setClaims([newClaim, ...claims]);
+      }
+
       toast({
         title: "Request submitted",
         description: "Your claim is being processed by AI workflows"
@@ -56,7 +109,15 @@ export default function Portal() {
       // Reset form
       setFormData({ claimType: "", description: "", files: null });
       setShowForm(false);
-    }, 1500);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to submit claim. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
