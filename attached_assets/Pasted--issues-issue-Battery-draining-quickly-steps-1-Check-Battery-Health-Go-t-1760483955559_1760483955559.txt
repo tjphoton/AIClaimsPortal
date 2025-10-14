@@ -1,0 +1,38 @@
+
+[
+{
+"issues": 
+[
+{
+"issue": 
+"Battery draining quickly",
+"steps": 
+[
+"1. Check Battery Health: Go to 'System Preferences' > 'Battery' > 'Battery Health...' and see if your battery needs service.",
+"2. Adjust Energy Settings: In 'System Preferences', navigate to 'Battery' and adjust settings such as 'Sleep' to optimize battery usage.",
+"3. Disable Background Apps: Open 'Activity Monitor' and check for apps using excessive energy. Quit any unnecessary apps that may be running in the background.",
+"4. Reduce Screen Brightness: Lower your display brightness by pressing the F1 key on your keyboard or adjusting it in 'System Preferences' > 'Displays'.",
+"5. Turn Off Unused Features: Disable Bluetooth, Wi-Fi, and other features that you are not using by clicking on the respective icons in the menu bar.",
+"6. Update macOS: Ensure your MacBook is running the latest version of macOS. Go to 'System Preferences' > 'Software Update' and check for available updates.",
+"7. Reset SMC: Shut down your MacBook, then hold down the right Shift + left Control + left Option keys and the power button for 10 seconds, then release the keys and power on your Mac."
+]
+},
+{
+"issue": 
+"Performance lags or stuttering",
+"steps": 
+[
+"1. Check Activity Monitor: Open 'Activity Monitor' to identify any resource-intensive applications. Quit or force-quit any apps that are using excessive CPU or memory.",
+"2. Free Up Disk Space: Go to 'About This Mac' > 'Storage' and check if your disk space is nearly full. Delete unneeded files or move them to an external drive.",
+"3. Restart Your Mac: Simply restarting your Mac can often resolve performance issues by clearing temporary files and freeing up system resources.",
+"4. Update Software: Make sure all your apps are updated to their latest versions via the Mac App Store or the respective app's website.",
+"5. Check for Malware: Use a reputable malware scanner or an antivirus tool to check for and eliminate any malware that might be affecting performance.",
+"6. Disable Visual Effects: Go to 'System Preferences' > 'Accessibility' > 'Display' and check 'Reduce motion' and 'Reduce transparency' to enhance performance.",
+"7. Reset NVRAM: Shut down your MacBook, turn it on, and immediately press and hold Option + Command + P + R for about 20 seconds, then release."
+]
+}
+],
+"resumeUrl": 
+"https://n8n-dq6g.onrender.com/webhook-waiting/56"
+}
+]
