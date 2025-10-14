@@ -39,9 +39,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const contentType = req.headers['content-type'] || '';
-      
+
       let response;
-      
+
       // Handle multipart form data (file uploads) differently from JSON
       if (contentType.includes('multipart/form-data')) {
         // Stream the request body directly for file uploads
@@ -65,8 +65,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const data = await response.json();
-      res.json(data);
+      const contentType = response.headers.get('content-type');
+
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        res.json(data);
+      } else {
+        const text = await response.text();
+        try {
+          const jsonData = JSON.parse(text);
+          res.json(jsonData);
+        } catch {
+          res.json({ message: text });
+        }
+      }
     } catch (error) {
       console.error('Resume workflow error:', error);
       res.status(500).json({ error: "Failed to resume workflow" });

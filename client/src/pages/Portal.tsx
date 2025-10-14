@@ -26,6 +26,7 @@ export default function Portal() {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [selectedSupportType, setSelectedSupportType] = useState<SupportType | null>(null);
   const [selectedIssues, setSelectedIssues] = useState<string[]>([]);
+  const [aiGeneratedIssues, setAiGeneratedIssues] = useState<string[]>([]);
   const [email, setEmail] = useState("");
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string>("");
   const { toast } = useToast();
@@ -208,6 +209,15 @@ export default function Portal() {
 
       if (!response.ok) {
         throw new Error('Failed to submit product selection');
+      }
+
+      const data = await response.json();
+      
+      // Handle AI-generated issues from the response
+      if (data.issues && Array.isArray(data.issues)) {
+        setAiGeneratedIssues(data.issues);
+      } else if (data[0]?.issues && Array.isArray(data[0].issues)) {
+        setAiGeneratedIssues(data[0].issues);
       }
 
       setCurrentStep("issues");
@@ -558,25 +568,47 @@ export default function Portal() {
 
               <div>
                 <h4 className="font-semibold text-gray-900 mb-4">Select all issues that apply:</h4>
-                <div className="space-y-3">
-                  {issuesList.map((issue, index) => {
-                    const isSelected = selectedIssues.includes(issue);
-                    return (
-                      <button
-                        key={index}
-                        onClick={() => toggleIssueSelection(issue)}
-                        className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
-                          isSelected 
-                            ? 'border-blue-500 bg-blue-50' 
-                            : 'border-gray-200 bg-white hover:border-gray-300'
-                        }`}
-                      >
-                        <p className="font-medium text-gray-900">{issue}</p>
-                        <p className="text-sm text-gray-500 mt-1">Check if this describes your problem</p>
-                      </button>
-                    );
-                  })}
-                </div>
+                {aiGeneratedIssues.length > 0 ? (
+                  <div className="space-y-3">
+                    {aiGeneratedIssues.map((issue, index) => {
+                      const isSelected = selectedIssues.includes(issue);
+                      return (
+                        <button
+                          key={index}
+                          onClick={() => toggleIssueSelection(issue)}
+                          className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                            isSelected 
+                              ? 'border-blue-500 bg-blue-50' 
+                              : 'border-gray-200 bg-white hover:border-gray-300'
+                          }`}
+                        >
+                          <p className="font-medium text-gray-900">{issue}</p>
+                          <p className="text-sm text-gray-500 mt-1">Check if this describes your problem</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {issuesList.map((issue, index) => {
+                      const isSelected = selectedIssues.includes(issue);
+                      return (
+                        <button
+                          key={index}
+                          onClick={() => toggleIssueSelection(issue)}
+                          className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                            isSelected 
+                              ? 'border-blue-500 bg-blue-50' 
+                              : 'border-gray-200 bg-white hover:border-gray-300'
+                          }`}
+                        >
+                          <p className="font-medium text-gray-900">{issue}</p>
+                          <p className="text-sm text-gray-500 mt-1">Check if this describes your problem</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <Button
