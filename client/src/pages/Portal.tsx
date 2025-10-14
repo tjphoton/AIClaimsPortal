@@ -270,6 +270,7 @@ export default function Portal() {
       }
 
       const data = await response.json();
+      console.log('Issues step response:', data);
       
       // Extract troubleshooting steps from response
       // Response format: [{ issues: [{issue: string, steps: string[]}], resumeUrl: string }]
@@ -279,11 +280,15 @@ export default function Portal() {
         setTroubleshootingSteps(data.issues);
       }
 
-      // Update resumeUrl if provided
+      // CRITICAL: Update resumeUrl for next step
       if (data[0]?.resumeUrl) {
+        console.log('Updated resumeUrl to:', data[0].resumeUrl);
         setResumeUrl(data[0].resumeUrl);
       } else if (data.resumeUrl) {
+        console.log('Updated resumeUrl to:', data.resumeUrl);
         setResumeUrl(data.resumeUrl);
+      } else {
+        console.warn('No resumeUrl in response, using previous:', resumeUrl);
       }
 
       setCurrentStep("resolution");
@@ -339,6 +344,7 @@ export default function Portal() {
 
     setIsSubmitting(true);
     try {
+      console.log('Submitting email to resumeUrl:', resumeUrl);
       const response = await fetch(`/api/resume-workflow?resumeUrl=${encodeURIComponent(resumeUrl)}`, {
         method: 'POST',
         headers: {
