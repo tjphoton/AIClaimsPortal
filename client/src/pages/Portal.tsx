@@ -175,7 +175,7 @@ export default function Portal() {
     );
   };
 
-  const handleSelectionContinue = () => {
+  const handleSelectionContinue = async () => {
     if (selectedProducts.length === 0) {
       toast({
         title: "No products selected",
@@ -193,13 +193,39 @@ export default function Portal() {
       return;
     }
 
-    setCurrentStep("issues");
-    setWorkflowSteps(steps => 
-      steps.map((step, idx) => ({
-        ...step,
-        status: idx <= 2 ? "completed" : idx === 3 ? "active" : "pending"
-      }))
-    );
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`/api/resume-workflow?resumeUrl=${encodeURIComponent(resumeUrl)}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          selectedProducts,
+          supportType: selectedSupportType
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit product selection');
+      }
+
+      setCurrentStep("issues");
+      setWorkflowSteps(steps => 
+        steps.map((step, idx) => ({
+          ...step,
+          status: idx <= 2 ? "completed" : idx === 3 ? "active" : "pending"
+        }))
+      );
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to continue. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleIssuesContinue = () => {
@@ -281,8 +307,8 @@ export default function Portal() {
 
       <div className="flex gap-6 p-6 max-w-7xl mx-auto">
         {/* Left Panel - Claim Status */}
-        <div className="w-80 bg-black rounded-xl p-6 flex flex-col text-white">
-          <div className="mb-8">
+        <div className="w-80 flex flex-col">
+          <div className="bg-black rounded-xl p-6 text-white mb-6">
             <h2 className="text-xl font-semibold mb-2 text-center">Claim Status</h2>
             <p className="text-gray-300 text-sm text-center">Track your progress</p>
           </div>
@@ -290,15 +316,15 @@ export default function Portal() {
           <div className="space-y-3 flex-1">
             {workflowSteps.map((step, index) => (
               <div key={step.id} className={`p-4 rounded-lg border ${
-                step.status === "completed" ? "bg-green-900 border-green-700" :
-                step.status === "active" ? "bg-blue-700 border-blue-500" :
-                "bg-gray-800 border-gray-700"
+                step.status === "completed" ? "bg-green-50 border-green-200" :
+                step.status === "active" ? "bg-blue-100 border-blue-300" :
+                "bg-white border-gray-200"
               }`}>
                 <div className="flex items-start gap-3">
                   <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
                     step.status === "completed" ? "bg-green-500 text-white" :
-                    step.status === "active" ? "bg-white text-blue-500" :
-                    "bg-gray-600 text-gray-300"
+                    step.status === "active" ? "bg-blue-500 text-white" :
+                    "bg-gray-300 text-gray-600"
                   }`}>
                     {step.status === "completed" ? (
                       <CheckCircle2 className="w-4 h-4" />
@@ -308,11 +334,11 @@ export default function Portal() {
                   </div>
                   <div className="flex-1">
                     <p className={`text-sm font-medium ${
-                      step.status === "active" ? "text-white" : "text-gray-300"
+                      step.status === "active" ? "text-gray-900" : "text-gray-700"
                     }`}>
                       {step.label}
                     </p>
-                    <p className="text-xs text-gray-400 mt-1">{step.description}</p>
+                    <p className="text-xs text-gray-500 mt-1">{step.description}</p>
                   </div>
                 </div>
               </div>
@@ -320,9 +346,9 @@ export default function Portal() {
           </div>
 
           {(currentStep === "selection" || currentStep === "issues" || currentStep === "resolution") && workflowResponse && (
-            <div className="mt-8 pt-6 border-t border-gray-700">
-              <h3 className="text-sm font-semibold mb-3 text-center">Receipt Preview & Summary</h3>
-              <div className="bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
+            <div className="mt-8 pt-6 border-t border-gray-300">
+              <h3 className="text-sm font-semibold mb-3 text-center text-gray-900">Receipt Review</h3>
+              <div className="bg-white rounded-lg overflow-hidden border border-gray-300">
                 <img 
                   src={uploadedFileUrl} 
                   alt="Invoice preview" 
@@ -330,9 +356,9 @@ export default function Portal() {
                 />
               </div>
               {workflowResponse.summary && (
-                <div className="mt-4 p-3 bg-blue-900 rounded-lg border border-blue-700">
-                  <p className="text-xs font-semibold text-blue-200 mb-1">Summary</p>
-                  <p className="text-xs text-blue-100">{workflowResponse.summary}</p>
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-xs font-semibold text-blue-700 mb-1">Summary</p>
+                  <p className="text-xs text-gray-700">{workflowResponse.summary}</p>
                 </div>
               )}
             </div>
@@ -405,9 +431,9 @@ export default function Portal() {
                   accept=".pdf,.png,.jpg,.jpeg"
                 />
                 <label htmlFor="file-upload" className="cursor-pointer block">
-                  <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400 pointer-events-none" />
                   {files && files.length > 0 ? (
-                    <div>
+                    <div className="pointer-events-none">
                       <p className="text-gray-900 font-medium">
                         Selected: {files[0].name}
                       </p>
@@ -416,12 +442,12 @@ export default function Portal() {
                       </p>
                     </div>
                   ) : (
-                    <div>
+                    <div className="pointer-events-none">
                       <p className="text-gray-700 font-medium mb-1">Drag & drop your invoice here</p>
                       <p className="text-gray-500 text-sm">Supports PDF and PNG files</p>
                     </div>
                   )}
-                  <Button variant="default" className="mt-4" type="button">
+                  <Button variant="default" className="mt-4 pointer-events-none" type="button">
                     Choose File
                   </Button>
                 </label>
@@ -504,10 +530,17 @@ export default function Portal() {
 
               <Button
                 onClick={handleSelectionContinue}
-                disabled={selectedProducts.length === 0 || !selectedSupportType}
+                disabled={isSubmitting || selectedProducts.length === 0 || !selectedSupportType}
                 className="w-full py-6 text-lg bg-blue-600 hover:bg-blue-700 text-white"
               >
-                Continue
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Continue"
+                )}
               </Button>
             </div>
           )}
