@@ -29,6 +29,7 @@ export default function Portal() {
   const [aiGeneratedIssues, setAiGeneratedIssues] = useState<string[]>([]);
   const [email, setEmail] = useState("");
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string>("");
+  const [troubleshootingSteps, setTroubleshootingSteps] = useState<string>("");
   const { toast } = useToast();
 
   const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([
@@ -238,7 +239,7 @@ export default function Portal() {
     }
   };
 
-  const handleIssuesContinue = () => {
+  const handleIssuesContinue = async () => {
     if (selectedIssues.length === 0) {
       toast({
         title: "No issues selected",
@@ -248,13 +249,54 @@ export default function Portal() {
       return;
     }
 
-    setCurrentStep("resolution");
-    setWorkflowSteps(steps => 
-      steps.map((step, idx) => ({
-        ...step,
-        status: idx <= 3 ? "completed" : idx === 4 ? "active" : "pending"
-      }))
-    );
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`/api/resume-workflow?resumeUrl=${encodeURIComponent(resumeUrl)}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          selectedIssues
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit issues');
+      }
+
+      const data = await response.json();
+      
+      // Extract troubleshooting steps from response
+      if (data.troubleshootingSteps) {
+        setTroubleshootingSteps(data.troubleshootingSteps);
+      } else if (data[0]?.troubleshootingSteps) {
+        setTroubleshootingSteps(data[0].troubleshootingSteps);
+      }
+
+      // Update resumeUrl if provided
+      if (data.resumeUrl) {
+        setResumeUrl(data.resumeUrl);
+      } else if (data[0]?.resumeUrl) {
+        setResumeUrl(data[0].resumeUrl);
+      }
+
+      setCurrentStep("resolution");
+      setWorkflowSteps(steps => 
+        steps.map((step, idx) => ({
+          ...step,
+          status: idx <= 3 ? "completed" : idx === 4 ? "active" : "pending"
+        }))
+      );
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to continue. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleResolutionContinue = async () => {
@@ -613,10 +655,17 @@ export default function Portal() {
 
               <Button
                 onClick={handleIssuesContinue}
-                disabled={selectedIssues.length === 0}
+                disabled={isSubmitting || selectedIssues.length === 0}
                 className="w-full py-6 text-lg bg-blue-600 hover:bg-blue-700 text-white"
               >
-                Continue
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Continue"
+                )}
               </Button>
             </div>
           )}
@@ -638,7 +687,7 @@ export default function Portal() {
                   <h4 className="font-semibold text-gray-900">Troubleshooting Steps</h4>
                 </div>
                 <p className="text-gray-700 leading-relaxed">
-                  Check the charging cable and adapter for damage and ensure they are properly connected, reset the System Management Controller (SMC) to resolve battery and power-related issues, update macOS to the latest version to fix potential software bugs causing shutdowns, run Apple Diagnostics to check for hardware problems.
+                  {troubleshootingSteps || "Loading troubleshooting steps..."}
                 </p>
               </div>
 
