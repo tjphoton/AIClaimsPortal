@@ -353,6 +353,9 @@ export default function Portal() {
         throw new Error('Failed to submit email');
       }
 
+      const data = await response.json();
+      console.log('Email submission response:', data);
+
       setWorkflowSteps(steps => 
         steps.map((step) => ({
           ...step,
@@ -365,6 +368,7 @@ export default function Portal() {
         description: "We'll send you updates via email"
       });
     } catch (error) {
+      console.error('Email submission error:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to submit. Please try again.",

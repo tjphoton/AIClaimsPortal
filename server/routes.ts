@@ -38,6 +38,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "resumeUrl is required" });
       }
 
+      console.log('Resuming workflow at:', resumeUrl);
+      console.log('Request body:', req.body);
+
       const requestContentType = req.headers['content-type'] || '';
 
       let response;
@@ -65,13 +68,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      console.log('n8n response status:', response.status);
+
       const contentType = response.headers.get('content-type');
 
       if (contentType && contentType.includes('application/json')) {
         const data = await response.json();
+        console.log('n8n response data:', data);
         res.json(data);
       } else {
         const text = await response.text();
+        console.log('n8n response text:', text);
         try {
           const jsonData = JSON.parse(text);
           res.json(jsonData);
