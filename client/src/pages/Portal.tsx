@@ -28,8 +28,12 @@ export default function Portal() {
   const [selectedIssues, setSelectedIssues] = useState<string[]>([]);
   const [aiGeneratedIssues, setAiGeneratedIssues] = useState<string[]>([]);
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState<string>("");
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string>("");
-  const [troubleshootingSteps, setTroubleshootingSteps] = useState<string>("");
+  const [troubleshootingSteps, setTroubleshootingSteps] = useState<Array<{
+    issue: string;
+    steps: string[];
+  }>>([]);
   const { toast } = useToast();
 
   const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([
@@ -268,17 +272,18 @@ export default function Portal() {
       const data = await response.json();
       
       // Extract troubleshooting steps from response
-      if (data.troubleshootingSteps) {
-        setTroubleshootingSteps(data.troubleshootingSteps);
-      } else if (data[0]?.troubleshootingSteps) {
-        setTroubleshootingSteps(data[0].troubleshootingSteps);
+      // Response format: [{ issues: [{issue: string, steps: string[]}], resumeUrl: string }]
+      if (data[0]?.issues && Array.isArray(data[0].issues)) {
+        setTroubleshootingSteps(data[0].issues);
+      } else if (data.issues && Array.isArray(data.issues)) {
+        setTroubleshootingSteps(data.issues);
       }
 
       // Update resumeUrl if provided
-      if (data.resumeUrl) {
-        setResumeUrl(data.resumeUrl);
-      } else if (data[0]?.resumeUrl) {
+      if (data[0]?.resumeUrl) {
         setResumeUrl(data[0].resumeUrl);
+      } else if (data.resumeUrl) {
+        setResumeUrl(data.resumeUrl);
       }
 
       setCurrentStep("resolution");
@@ -299,11 +304,34 @@ export default function Portal() {
     }
   };
 
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    if (value && !validateEmail(value)) {
+      setEmailError("Not a valid email address");
+    } else {
+      setEmailError("");
+    }
+  };
+
   const handleResolutionContinue = async () => {
     if (!email) {
       toast({
         title: "Email required",
         description: "Please enter your email address",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address",
         variant: "destructive"
       });
       return;
@@ -317,15 +345,12 @@ export default function Portal() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          selectedProducts,
-          supportType: selectedSupportType,
-          selectedIssues,
           email 
         })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit resolution details');
+        throw new Error('Failed to submit email');
       }
 
       setWorkflowSteps(steps => 
@@ -686,9 +711,22 @@ export default function Portal() {
                   <Wrench className="w-5 h-5 text-gray-600 mt-1" />
                   <h4 className="font-semibold text-gray-900">Troubleshooting Steps</h4>
                 </div>
-                <p className="text-gray-700 leading-relaxed">
-                  {troubleshootingSteps || "Loading troubleshooting steps..."}
-                </p>
+                {troubleshootingSteps.length > 0 ? (
+                  <div className="space-y-6">
+                    {troubleshootingSteps.map((item, index) => (
+                      <div key={index}>
+                        <h5 className="font-semibold text-gray-900 mb-3">{item.issue}</h5>
+                        <ol className="space-y-2 text-gray-700 leading-relaxed">
+                          {item.steps.map((step, stepIndex) => (
+                            <li key={stepIndex} className="text-sm">{step}</li>
+                          ))}
+                        </ol>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-700 leading-relaxed">Loading troubleshooting steps...</p>
+                )}
               </div>
 
               <div className="bg-gray-50 rounded-lg p-6">
@@ -707,13 +745,16 @@ export default function Portal() {
                       type="email"
                       placeholder="Enter your email address"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full bg-white text-gray-900"
+                      onChange={(e) => handleEmailChange(e.target.value)}
+                      className={`w-full bg-white text-gray-900 ${emailError ? 'border-red-500' : ''}`}
                     />
+                    {emailError && (
+                      <p className="text-red-500 text-sm mt-1">{emailError}</p>
+                    )}
                   </div>
                   <Button
                     onClick={handleResolutionContinue}
-                    disabled={isSubmitting || !email}
+                    disabled={isSubmitting || !email || !!emailError}
                     className="w-full py-6 text-lg bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     {isSubmitting ? (
