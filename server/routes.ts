@@ -38,19 +38,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "resumeUrl is required" });
       }
 
-      const response = await fetch(resumeUrl, {
-        method: 'POST',
-        body: req,
-        duplex: 'half',
-        headers: {
-          'Content-Type': req.headers['content-type'] || 'application/json',
-          'Content-Length': req.headers['content-length'] || '0'
-        }
-      } as any);
+      const contentType = req.headers['content-type'] || '';
+      
+      let response;
+      
+      // Handle multipart form data (file uploads) differently from JSON
+      if (contentType.includes('multipart/form-data')) {
+        // Stream the request body directly for file uploads
+        response = await fetch(resumeUrl, {
+          method: 'POST',
+          body: req,
+          duplex: 'half',
+          headers: {
+            'Content-Type': contentType,
+            'Content-Length': req.headers['content-length'] || '0'
+          }
+        } as any);
+      } else {
+        // For JSON requests, use the parsed body
+        response = await fetch(resumeUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(req.body)
+        });
+      }
 
       const data = await response.json();
       res.json(data);
     } catch (error) {
+      console.error('Resume workflow error:', error);
       res.status(500).json({ error: "Failed to resume workflow" });
     }
   });
