@@ -34,6 +34,10 @@ export default function Portal() {
         body: JSON.stringify({})
       });
 
+      if (!response.ok) {
+        throw new Error('Failed to start workflow');
+      }
+
       const data = await response.json();
       
       if (data.resumeUrl) {
@@ -45,15 +49,17 @@ export default function Portal() {
           }))
         );
         setCurrentStep("upload");
+        setIsSubmitting(false);
+      } else {
+        throw new Error('No resume URL received');
       }
     } catch (error) {
+      setIsSubmitting(false);
       toast({
         title: "Error",
-        description: "Failed to start workflow. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to start workflow. Please try again.",
         variant: "destructive"
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
