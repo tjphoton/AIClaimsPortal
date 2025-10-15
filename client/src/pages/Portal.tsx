@@ -217,7 +217,7 @@ export default function Portal() {
       }
 
       const data = await response.json();
-      
+
       // Handle AI-generated issues from the response
       if (data.issues && Array.isArray(data.issues)) {
         setAiGeneratedIssues(data.issues);
@@ -271,11 +271,11 @@ export default function Portal() {
 
       const data = await response.json();
       console.log('Issues step response:', data);
-      
+
       // Extract troubleshooting steps from response
       // Response format: [{ issues: {issueKey: [steps]}, resumeUrl: string }]
       let issuesData = data[0]?.issues || data.issues;
-      
+
       if (issuesData) {
         // Convert object format to array format
         if (!Array.isArray(issuesData) && typeof issuesData === 'object') {
@@ -669,7 +669,6 @@ export default function Portal() {
                           }`}
                         >
                           <p className="font-medium text-gray-900">{issue}</p>
-                          <p className="text-sm text-gray-500 mt-1">Check if this describes your problem</p>
                         </button>
                       );
                     })}
@@ -689,7 +688,6 @@ export default function Portal() {
                           }`}
                         >
                           <p className="font-medium text-gray-900">{issue}</p>
-                          <p className="text-sm text-gray-500 mt-1">Check if this describes your problem</p>
                         </button>
                       );
                     })}
