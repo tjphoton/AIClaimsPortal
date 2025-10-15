@@ -71,20 +71,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('n8n response status:', response.status);
 
       const contentType = response.headers.get('content-type');
+      const text = await response.text();
+      console.log('n8n response text:', text);
 
-      if (contentType && contentType.includes('application/json')) {
-        const data = await response.json();
+      // Handle empty responses
+      if (!text || text.trim() === '') {
+        console.log('Empty response from n8n, sending success message');
+        return res.json({ success: true, message: 'Workflow completed successfully' });
+      }
+
+      // Try to parse as JSON
+      try {
+        const data = JSON.parse(text);
         console.log('n8n response data:', data);
         res.json(data);
-      } else {
-        const text = await response.text();
-        console.log('n8n response text:', text);
-        try {
-          const jsonData = JSON.parse(text);
-          res.json(jsonData);
-        } catch {
-          res.json({ message: text });
-        }
+      } catch (error) {
+        console.error('Failed to parse response as JSON:', error);
+        res.json({ message: text });
       }
     } catch (error) {
       console.error('Resume workflow error:', error);

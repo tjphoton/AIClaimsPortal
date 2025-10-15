@@ -273,11 +273,20 @@ export default function Portal() {
       console.log('Issues step response:', data);
       
       // Extract troubleshooting steps from response
-      // Response format: [{ issues: [{issue: string, steps: string[]}], resumeUrl: string }]
-      if (data[0]?.issues && Array.isArray(data[0].issues)) {
-        setTroubleshootingSteps(data[0].issues);
-      } else if (data.issues && Array.isArray(data.issues)) {
-        setTroubleshootingSteps(data.issues);
+      // Response format: [{ issues: {issueKey: [steps]}, resumeUrl: string }]
+      let issuesData = data[0]?.issues || data.issues;
+      
+      if (issuesData) {
+        // Convert object format to array format
+        if (!Array.isArray(issuesData) && typeof issuesData === 'object') {
+          const stepsArray = Object.entries(issuesData).map(([issue, steps]) => ({
+            issue,
+            steps: steps as string[]
+          }));
+          setTroubleshootingSteps(stepsArray);
+        } else if (Array.isArray(issuesData)) {
+          setTroubleshootingSteps(issuesData);
+        }
       }
 
       // CRITICAL: Update resumeUrl for next step
